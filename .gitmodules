@@ -1,0 +1,3 @@
+[submodule "src/gripper_pkg/grip_serv/gripper_controller"]
+	path = src/gripper_pkg/grip_serv/gripper_controller
+	url = git@github.com:ITMORobotics/gripper_controller.git
