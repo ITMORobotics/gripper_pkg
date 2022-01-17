@@ -4,7 +4,19 @@ from __future__ import print_function
 import datetime
 import rospy
 from .gripper_controller import GripperSerialController
+from .gripper_controller import GripperListenerI
 from gripper_pkg.srv import control
+from std_msgs.msg import String
+
+class GripperPublisher(GripperListenerI):
+
+    def __init__(self):
+        self.publisher = rospy.Publisher('from_gripper_info', String, queue_size=10)
+
+    def process_data(self, package: bytes, type_code:int, left_val: float, right_val: float)->None:
+        pub_str = "time: %s     package: %s    type_code:%d     left_val:%f     right_val:%f"%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:$S"), package.hex(":"), type_code, left_val, right_val)
+        rospy.loginfo(pub_str)
+        self.publisher.publish(pub_str)
 
 
 class GripperService:
@@ -12,9 +24,11 @@ class GripperService:
     def __init__(self):
         try:
             self.gripper = GripperSerialController('/dev/ttyACM0', 57600)
+            self.gripper.attach(listener=GripperPublisher())
+            self.gripper.start_listening()
         except:
             rospy.loginfo("COM port connection error  %s"%datetime.datetime.now().strftime("%Y-%m-%d %H:%M:$S"))
-        self.pseudo_switch = {"100":self.release, "101":self.unrelease, "110":self.open, "111":self.close}
+        self.pseudo_switch = {"40":self.get_temperature, "100":self.release, "101":self.unrelease, "110":self.open, "111":self.close}
 
     def handle_control_message(self, request):
         log_string = "Message recieved at %s" %datetime.datetime.now().strftime("%Y-%m-%d %H:%M:$S")
@@ -48,3 +62,6 @@ class GripperService:
 
     def unrelease(self):
         self.gripper.unrelease()
+    
+    def get_temperature(self):
+        self.gripper.get_temp()
