@@ -13,7 +13,7 @@ class GripperService:
         try:
             self.gripper = GripperSerialController('/dev/ttyACM0', 57600)
         except:
-            print("COM port unavailable")
+            rospy.loginfo("COM port connection error  %s"%datetime.datetime.now().strftime("%Y-%m-%d %H:%M:$S"))
         self.pseudo_switch = {"100":self.release, "101":self.unrelease, "110":self.open, "111":self.close}
 
     def handle_control_message(self, request):
@@ -43,8 +43,8 @@ class GripperService:
     def close(self):
         self.gripper.close()    
     
-    def release():
+    def release(self):
         self.gripper.release()
 
-    def unrelease():
+    def unrelease(self):
         self.gripper.unrelease()
