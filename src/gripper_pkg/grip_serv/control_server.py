@@ -28,7 +28,7 @@ class GripperService:
             self.gripper.start_listening()
         except:
             rospy.loginfo("COM port connection error  %s"%datetime.datetime.now().strftime("%Y-%m-%d %H:%M:$S"))
-        self.pseudo_switch = {"40":self.get_temperature, "100":self.release, "101":self.unrelease, "110":self.open, "111":self.close}
+        self.pseudo_switch = {"10":self.get_position,"20":self.get_load,"30":self.get_voltage,"40":self.get_temperature, "100":self.release, "101":self.unrelease, "110":self.open, "111":self.close}
 
     def handle_control_message(self, request):
         log_string = "Message recieved at %s" %datetime.datetime.now().strftime("%Y-%m-%d %H:%M:$S")
@@ -65,3 +65,14 @@ class GripperService:
     
     def get_temperature(self):
         self.gripper.get_temp()
+    
+    def get_voltage(self):
+        self.gripper.get_voltage()
+    
+    def get_load(self):
+        self.gripper.get_load()
+
+    def get_position(self):
+        self.gripper.get_position()
+
+
