@@ -3,6 +3,9 @@ from __future__ import print_function
 
 import datetime
 import rospy
+import sys
+import glob
+import serial
 from .gripper_controller import GripperSerialController
 from .gripper_controller import GripperListenerI
 from gripper_pkg.srv import control
@@ -23,7 +26,12 @@ class GripperService:
     
     def __init__(self):
         try:
-            self.gripper = GripperSerialController('/dev/ttyACM1', 57600)
+            self.serial_list = self.serial_ports()
+            #print(self.serial_list)
+            for i in self.serial_list:
+                if 'ACM' in i:
+                    self.gripper = GripperSerialController(i, 57600)
+            #self.gripper = GripperSerialController('/dev/ttyACM0', 57600)
             self.gripper.attach(listener=GripperPublisher())
             self.gripper.start_listening()
         except:
@@ -49,6 +57,21 @@ class GripperService:
         rospy.loginfo(log_string)
         rospy.spin()
     
+    def serial_ports(self):
+        if sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+            ports = glob.glob('/dev/tty[A-Za-z]*')
+        else:
+            raise EnvironmentError('Unsupported platform')
+        result = []
+        for port in ports:
+            try:
+                s = serial.Serial(port)
+                s.close()
+                result.append(port)
+            except(OSError, serial.SerialException):
+                pass
+        return result
+
     def open(self, speed, position):
         self.gripper.open()
 
@@ -75,5 +98,4 @@ class GripperService:
 
     def get_position(self, speed, position):
         self.gripper.get_position()
-
 
