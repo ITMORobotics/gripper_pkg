@@ -25,35 +25,44 @@ class GripperPublisher(GripperListenerI):
 class GripperService:
     
     def __init__(self):
-        try:
-            self.serial_list = self.serial_ports()
-            #print(self.serial_list)
-            for i in self.serial_list:
-                if 'ACM' in i:
-                    self.gripper = GripperSerialController(i, 57600)
+       rospy.init_node('gripper_control_node')
+       self.serial_list = self.serial_ports()
+       self.gripper_list = {}
+       try:
+           for counter, value in enumerate(self.serial_list):
+                if 'ACM' in value:
+                    rospy.loginfo("Found gripper with id %d \n"%counter)
+                    self.gripper_list[counter] = GripperSerialController(value, 57600)
+                    self.gripper_list[counter].attach(listener=GripperPublisher())
+                    self.gripper_list[counter].start_listening()
             #self.gripper = GripperSerialController('/dev/ttyACM0', 57600)
-            self.gripper.attach(listener=GripperPublisher())
-            self.gripper.start_listening()
-        except:
+            #self.gripper.attach(listener=GripperPublisher())
+            #self.gripper.start_listening()
+       except:
             rospy.loginfo("COM port connection error  %s"%datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        self.pseudo_switch = {"10":self.get_position,"20":self.get_load,"30":self.get_voltage,"40":self.get_temperature, "100":self.release, "101":self.unrelease, "110":self.open, "111":self.close,"121": self.force_close}
+        
+       self.pseudo_switch = {"10":self.get_position,"20":self.get_load,"30":self.get_voltage,"40":self.get_temperature, "100":self.release, "101":self.unrelease, "110":self.open, "111":self.close,"121": self.force_close}
+
+       #if self.gripper_list:
+           #rospy.loginfo("Grippers found: {}".format(self.gripper_list))
+      # else:
+           #rospy.loginfo("No grippers found")
 
     def handle_control_message(self, request):
-        log_string = "Message recieved at %s" %datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_string = "Message recieved at %s \n" %datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         rospy.loginfo(log_string)
-        request_string = "Request:| Operation type: %d | Speed: %d | Position: %d"%(request.operation_type, request.speed, request.position)
+        request_string = "Request:| Operation type: %d | Speed: %d | Position: %d \n"%(request.operation_type, request.speed, request.position)
         rospy.loginfo(request_string)
         try:
-            self.pseudo_switch['%d'%request.operation_type](request.speed, request.position)
+            self.pseudo_switch['%d'%request.operation_type](request.id, request.speed, request.position)
         except:
-            rospy.loginfo("While operation error occured %s"%datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            rospy.loginfo("While operation error occured %s\n"%datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                     
         return "Operation %d ended"%request.operation_type
 
     def handle_control_message_server(self):
-        rospy.init_node('gripper_control_node')
         service = rospy.Service('control_gripper', control, self.handle_control_message)
-        log_string = "Service started at %s" %datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_string = "Service started at %s " %datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         rospy.loginfo(log_string)
         rospy.spin()
     
@@ -72,30 +81,30 @@ class GripperService:
                 pass
         return result
 
-    def open(self, speed, position):
-        self.gripper.open()
+    def open(self, id,  speed, position):
+        self.gripper_list[id].open()
 
-    def close(self, speed, position):
-        self.gripper.close()
+    def close(self, id, speed, position):
+        self.gripper_list[id].close()
 
-    def force_close(self, speed, position):
-        self.gripper.close_torque(speed)
+    def force_close(self, id, speed, position):
+        self.gripper_list[id].close_torque(speed)
     
-    def release(self, speed, position):
-        self.gripper.release()
+    def release(self, id, speed, position):
+        self.gripper_list[id].release()
 
-    def unrelease(self, speed, position):
-        self.gripper.unrelease()
+    def unrelease(self, id,  speed, position):
+        self.gripper_list[id].unrelease()
     
-    def get_temperature(self, speed, position):
-        self.gripper.get_temp()
+    def get_temperature(self, id, speed, position):
+        self.gripper_list[id].get_temp()
     
-    def get_voltage(self, speed, position):
-        self.gripper.get_voltage()
+    def get_voltage(self, id, speed, position):
+        self.gripper_list[id].get_voltage()
     
-    def get_load(self, speed, position):
-        self.gripper.get_load()
+    def get_load(self, id, speed, position):
+        self.gripper_list[id].get_load()
 
-    def get_position(self, speed, position):
-        self.gripper.get_position()
+    def get_position(self, id,  speed, position):
+        self.gripper_list[id].get_position()
 
