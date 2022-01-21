@@ -1,4 +1,6 @@
+int64 id
 int64 operation_type
 int64 speed 
 int64 position
 ---
+string return_message
