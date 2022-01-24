@@ -13,12 +13,12 @@ from std_msgs.msg import String
 
 class GripperPublisher(GripperListenerI):
 
-    def __init__(self):
-        self.publisher = rospy.Publisher('from_gripper_info', String, queue_size=10)
-
+    def __init__(self, publisher):
+        #self.publisher = rospy.Publisher("from_gripper_info", String, queue_size=10)
+        self.publisher = publisher
     def process_data(self, package: bytes, type_code:int, left_val: float, right_val: float)->None:
         pub_str = "Time: %s | package: %s | type_code: %d | left_val: %f | right_val: %f"%(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), package.hex(":"), type_code, left_val, right_val)
-        rospy.loginfo(pub_str)
+        #rospy.loginfo(pub_str)
         self.publisher.publish(pub_str)
 
 
@@ -26,13 +26,14 @@ class GripperService:
     
     def __init__(self):
         rospy.init_node('gripper_control_node')
+        self.publisher = rospy.Publisher('from_gripper_info', String, queue_size=10)
         self.serial_list = self.serial_ports()
         self.gripper_list = {}
         for counter, value in enumerate(self.serial_list):
             if 'ACM' in value:
                 #rospy.loginfo("Found gripper with id %d \n"%counter)
                 self.gripper_list[counter] = GripperSerialController(value, 57600)
-                self.gripper_list[counter].attach(listener=GripperPublisher())
+                self.gripper_list[counter].attach(listener=GripperPublisher(self.publisher))
                 self.gripper_list[counter].start_listening()
             #self.gripper = GripperSerialController('/dev/ttyACM0', 57600)
             #self.gripper.attach(listener=GripperPublisher())
@@ -47,13 +48,18 @@ class GripperService:
     def handle_control_message(self, request):
         log_string = "Message recieved at %s \n" %datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         rospy.loginfo(log_string)
-        request_string = "Request:| Operation type: %d | Speed: %d | Position: %d \n"%(request.operation_type, request.speed, request.position)
+        request_string = "Request:| ID:  %d | Operation type: %d | Speed: %d | Position: %d \n"%(request.id, request.operation_type, request.speed, request.position)
         rospy.loginfo(request_string)
         try:
             self.pseudo_switch['%d'%request.operation_type](request.id, request.speed, request.position)
         except:
             rospy.loginfo("While operation error occured %s\n"%datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                    
+        
+        while not self.gripper_list[request.id].last_move_status:
+            rospy.loginfo("Operation is still in progress %s"%datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+        rospy.loginfo("Operation %d ended %s"%(request.operation_type,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+
         return "Operation %d ended"%request.operation_type
 
     def handle_control_message_server(self):
