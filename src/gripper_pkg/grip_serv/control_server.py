@@ -60,7 +60,7 @@ class GripperService:
 
         rospy.loginfo("Operation %d ended %s"%(request.operation_type,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
 
-        return "Operation %d ended"%request.operation_type
+        return "Operation %d ended %s"%(request.operation_type, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     def handle_control_message_server(self):
         service = rospy.Service('control_gripper', control, self.handle_control_message)
