@@ -25,28 +25,24 @@ class GripperPublisher(GripperListenerI):
 class GripperService:
     
     def __init__(self):
-       rospy.init_node('gripper_control_node')
-       self.serial_list = self.serial_ports()
-       self.gripper_list = {}
-       try:
-           for counter, value in enumerate(self.serial_list):
-                if 'ACM' in value:
-                    rospy.loginfo("Found gripper with id %d \n"%counter)
-                    self.gripper_list[counter] = GripperSerialController(value, 57600)
-                    self.gripper_list[counter].attach(listener=GripperPublisher())
-                    self.gripper_list[counter].start_listening()
+        rospy.init_node('gripper_control_node')
+        self.serial_list = self.serial_ports()
+        self.gripper_list = {}
+        for counter, value in enumerate(self.serial_list):
+            if 'ACM' in value:
+                #rospy.loginfo("Found gripper with id %d \n"%counter)
+                self.gripper_list[counter] = GripperSerialController(value, 57600)
+                self.gripper_list[counter].attach(listener=GripperPublisher())
+                self.gripper_list[counter].start_listening()
             #self.gripper = GripperSerialController('/dev/ttyACM0', 57600)
             #self.gripper.attach(listener=GripperPublisher())
             #self.gripper.start_listening()
-       except:
-            rospy.loginfo("COM port connection error  %s"%datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         
-       self.pseudo_switch = {"10":self.get_position,"20":self.get_load,"30":self.get_voltage,"40":self.get_temperature, "100":self.release, "101":self.unrelease, "110":self.open, "111":self.close,"121": self.force_close}
-
-       #if self.gripper_list:
-           #rospy.loginfo("Grippers found: {}".format(self.gripper_list))
-      # else:
-           #rospy.loginfo("No grippers found")
+        self.pseudo_switch = {"10":self.get_position,"20":self.get_load,"30":self.get_voltage,"40":self.get_temperature, "100":self.release, "101":self.unrelease, "110":self.open, "111":self.close,"121": self.force_close}
+        rospy.loginfo("Found %d grippers "%len(self.gripper_list))
+        if len(self.gripper_list) != 0:
+            for key in self.gripper_list.keys():
+                rospy.loginfo("ID: %d"%key)
 
     def handle_control_message(self, request):
         log_string = "Message recieved at %s \n" %datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
