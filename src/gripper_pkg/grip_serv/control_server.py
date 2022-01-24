@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import datetime
+import time
 import rospy
 import sys
 import glob
@@ -57,6 +58,7 @@ class GripperService:
         
         while not self.gripper_list[request.id].last_move_status:
             rospy.loginfo("Operation is still in progress %s"%datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            time.sleep(1)
 
         rospy.loginfo("Operation %d ended %s"%(request.operation_type,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
 
