@@ -28,14 +28,17 @@ class GripperService:
     def __init__(self):
         rospy.init_node('gripper_control_node')
         self.publisher = rospy.Publisher('from_gripper_info', String, queue_size=10)
-        self.serial_list = self.serial_ports()
         self.gripper_list = {}
-        for counter, value in enumerate(self.serial_list):
-            if 'ACM' in value:
+        self.gripper_ports = ["/dev/gripper_left", "/dev/gripper_right"]
+        for counter, port in enumerate(self.gripper_ports):
+            try:
                 #rospy.loginfo("Found gripper with id %d \n"%counter)
-                self.gripper_list[counter] = GripperSerialController(value, 57600)
+                self.gripper_list[counter] = GripperSerialController(port, 57600)
                 self.gripper_list[counter].attach(listener=GripperPublisher(self.publisher))
                 self.gripper_list[counter].start_listening()
+            except:
+                    continue
+            time.sleep(0.1)
             #self.gripper = GripperSerialController('/dev/ttyACM0', 57600)
             #self.gripper.attach(listener=GripperPublisher())
             #self.gripper.start_listening()
